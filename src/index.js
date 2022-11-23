@@ -54,10 +54,37 @@
         sourceFiles = await fsUtils.readFilesUnderDir(source)
     
     console.log('found local files', sourceFiles)
+    // line with 'Modify: 2022-11-22 11:09:47.087220971 +0100' for modify time
+
     const regex = /Modify: (.*)/gm
+
+    // create remote directories, sftp doesn't support automatic dir create on upload, and
+    // we want to avoid round tripping to the server per file, so we locally collate all unique
+    // dirs and create them first
+    let uniqueDirs = []
+    for (let file of sourceFiles){
+        const localPath = path.resolve(file)
+        let remotePath = localPath.replace(sourceAbsolute, '')
+        remotePath = path.join(target, remotePath)
+        remotePath = path.dirname(remotePath)
+
+        if (!uniqueDirs.includes(remotePath))
+            uniqueDirs.push(remotePath)
+    }
+
+    for (let uniqueDir of uniqueDirs){
+        try {
+            console.log(`Creating remote dir ${uniqueDir}`)
+            await sftp.mkdir(host, user, password, uniqueDir)
+        }catch(ex){
+            console.log(`error creating dir ${uniqueDir}`)
+            throw ex
+        }
+    }
+
     for (let file of sourceFiles){
         // get timestamp of local
-
+        console.log('processing local file ', file)
         let fileStats,
             localModifyTime
         try {
@@ -79,8 +106,11 @@
         try {
             stat = await ssh(host, user, password, `stat ${remotePath}`)
         } catch(ex){
-            if (ex.includes('cannot stat'))
+            // look for 'cannot stat' for file not found
+            if (ex.includes('cannot stat')){
                 pushFile = true
+                console.log('file doesnt exist remote')
+            }
             else
                 throw ex
         }
@@ -90,8 +120,10 @@
             if (modifytime && modifytime.length > 0){
                 modifytime = new Date(modifytime[1])
 
-                if (localModifyTime > modifytime)
+                if (localModifyTime > modifytime){
+                    console.log(localModifyTime, ' newer than ', modifytime)
                     pushFile = true
+                }
             }
         }
 
@@ -100,11 +132,13 @@
             continue
         }
 
+        let tempRemotePath = path.join(path.dirname(remotePath), `~${path.basename(remotePath)}`)
+
         try {
-            await sftp(host, user, password, localPath, remotePath)
+            await sftp.putFile(host, user, password, localPath, tempRemotePath)
+            await sftp.deleteFile(host, user, password, remotePath)
+            await sftp.moveFile(host, user, password, tempRemotePath, remotePath)
             console.log(`put file ${localPath}`)
-            // look for 'cannot stat' for file not found
-            // line with 'Modify: 2022-11-22 11:09:47.087220971 +0100' for modify time
          }catch(ex){
             console.log(`failed to process file ${file}:`)
             console.log(ex)

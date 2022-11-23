@@ -7,8 +7,8 @@
     "bin": "index.js",
     "scripts": {
         "start": "node index.js",
-        "break": "node --inspect-brk=0.0.0.0:8081 index",
-        "debug": "node --inspect=0.0.0.0:8081 index"
+        "break": "node --inspect-brk=0.0.0.0:8091 index",
+        "debug": "node --inspect=0.0.0.0:8091 index"
     },
     "dependencies": {
         "fs-extra": "9.0.0",
