@@ -1,18 +1,26 @@
+async function sleep(ms){
+    return new Promise((resolve, reject)=>{
+        setTimeout(() => {
+            resolve()
+        }, ms)
+    })
+}
+
 (async ()=>{
     const minimist = require('minimist'),
         process = require('process'),
         fsUtils = require('madscience-fsUtils'),
         path = require('path'),
         fs = require('fs-extra'),
+        Worker = require('worker_threads').Worker,
         argv = minimist(process.argv.slice(2)),
         source = argv.source || argv.s,
         target = argv.target || argv.t,
         host = argv.target || argv.h,
         user = argv.user || argv.u,
-        port = argv.port,
-        password = argv.password || argv.p,
-        ssh = require('./lib/ssh'),
-        sftp = require('./lib/sftp')
+        port = argv.port || 22,
+        maxWorkers = argv.workers || argv.w || 10,
+        password = argv.password || argv.p
 
     if (!source){
         console.log(`ERROR :  Source not set, use --source or -s`)
@@ -53,7 +61,6 @@
     else 
         sourceFiles = await fsUtils.readFilesUnderDir(source)
     
-    console.log('found local files', sourceFiles)
     // line with 'Modify: 2022-11-22 11:09:47.087220971 +0100' for modify time
 
     const regex = /Modify: (.*)/gm
@@ -72,78 +79,61 @@
             uniqueDirs.push(remotePath)
     }
 
-    for (let uniqueDir of uniqueDirs){
-        try {
-            console.log(`Creating remote dir ${uniqueDir}`)
-            await sftp.mkdir(host, user, password, uniqueDir)
-        }catch(ex){
-            console.log(`error creating dir ${uniqueDir}`)
-            throw ex
-        }
+    let workerCount = 0
+    while (uniqueDirs.length){
+        if (workerCount < maxWorkers){
+
+            const worker = new Worker('./lib/mkdirWorker.js'),
+                uniqueDir = uniqueDirs.pop()
+            
+            worker.postMessage({
+                uniqueDir,
+                host,
+                user,
+                port,
+                password,
+            })
+            workerCount ++
+
+            worker.on('message', (result) => {
+                workerCount --
+                if (!result.success)
+                    console.log(result.error)
+            })
+        } 
+    
+        await sleep(10)
     }
 
-    for (let file of sourceFiles){
-        // get timestamp of local
-        console.log('processing local file ', file)
-        let fileStats,
-            localModifyTime
-        try {
-            fileStats = fs.statSync(file)
-            localModifyTime = new Date(fileStats.mtime)
+    console.log('done creating dirs')
 
-        } catch (ex){
-            console.log(`failed to get stats of local file ${file}`)
-            throw ex
-        }
+    workerCount = 0
+    while (sourceFiles.length){
+        if (workerCount < maxWorkers){
 
-        // get timestamp for remote
-        const localPath = path.resolve(file)
-        let remotePath = localPath.replace(sourceAbsolute, '')
-        remotePath = path.join(target, remotePath)
-        let stat,
-            pushFile = false
+            const worker = new Worker('./lib/putfileWorker.js'),
+                file = sourceFiles.pop()
 
-        try {
-            stat = await ssh(host, user, password, `stat ${remotePath}`)
-        } catch(ex){
-            // look for 'cannot stat' for file not found
-            if (ex.includes('cannot stat')){
-                pushFile = true
-                console.log('file doesnt exist remote')
-            }
-            else
-                throw ex
-        }
+            worker.postMessage({
+                file,
+                host,
+                user,
+                password,
+                port,
+                sourceAbsolute,
+                target
+            })
+            workerCount ++
 
-        if (stat){
-            let modifytime = regex.exec(stat)
-            if (modifytime && modifytime.length > 0){
-                modifytime = new Date(modifytime[1])
-
-                if (localModifyTime > modifytime){
-                    console.log(localModifyTime, ' newer than ', modifytime)
-                    pushFile = true
-                }
-            }
-        }
-
-        if (!pushFile){
-            console.log(`skipping ${localPath}`)
-            continue
-        }
-
-        let tempRemotePath = path.join(path.dirname(remotePath), `~${path.basename(remotePath)}`)
-
-        try {
-            await sftp.putFile(host, user, password, localPath, tempRemotePath)
-            await sftp.deleteFile(host, user, password, remotePath)
-            await sftp.moveFile(host, user, password, tempRemotePath, remotePath)
-            console.log(`put file ${localPath}`)
-         }catch(ex){
-            console.log(`failed to process file ${file}:`)
-            console.log(ex)
-            process.exit(1)
-        }
+            worker.on('message', (result) => {
+                workerCount --
+                if (!result.success)
+                    console.log(result.error)
+            })
+        } 
+        
+        await sleep(10)
     }
-
+    
+    console.log('done!')
 })()

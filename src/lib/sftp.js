@@ -1,10 +1,10 @@
 module.exports = {
     async mkdir(host, username, password, path, port=22){
+        const Client = require('ssh2-sftp-client'),
+            sftp = new Client
 
         return new Promise((resolve, reject)=>{
             try{
-                const Client = require('ssh2-sftp-client'),
-                    fs = require('fs-extra')
     
                 const config = {
                     host: host,
@@ -12,8 +12,6 @@ module.exports = {
                     username: username,
                     password: password
                 }
-                
-                let sftp = new Client
     
                 sftp.connect(config)
                     .then(() => {
@@ -29,16 +27,19 @@ module.exports = {
                     })
     
             } catch (ex){
+                sftp.end()
                 reject(ex)
             }
         })
     },
 
     async deleteFile(host, username, password, path, port=22){
+        const Client = require('ssh2-sftp-client'),
+            fs = require('fs-extra'),
+            sftp = new Client
+
         return new Promise((resolve, reject)=>{
             try{
-                const Client = require('ssh2-sftp-client'),
-                    fs = require('fs-extra')
     
                 const config = {
                     host: host,
@@ -46,8 +47,6 @@ module.exports = {
                     username: username,
                     password: password
                 }
-                
-                let sftp = new Client
     
                 sftp.connect(config)
                     .then(() => {
@@ -66,16 +65,19 @@ module.exports = {
                     })
     
             } catch (ex){
+                sftp.end()
                 reject(ex)
             }
         })
     },
 
     async moveFile(host, username, password, tempPath, remotePath, port=22){
+        const Client = require('ssh2-sftp-client'),
+            sftp = new Client
+
+
         return new Promise((resolve, reject)=>{
             try{
-                const Client = require('ssh2-sftp-client'),
-                    fs = require('fs-extra')
     
                 const config = {
                     host: host,
@@ -83,8 +85,6 @@ module.exports = {
                     username: username,
                     password: password
                 }
-                
-                let sftp = new Client
     
                 sftp.connect(config)
                     .then(() => {
@@ -100,27 +100,27 @@ module.exports = {
                     })
     
             } catch (ex){
+                sftp.end()
                 reject(ex)
             }
         })
     },
 
     async putFile(host, username, password, localPath, remotePath, port=22){
+        const Client = require('ssh2-sftp-client'),
+            fs = require('fs-extra'),
+            sftp = new Client
 
         return new Promise((resolve, reject)=>{
             try{
-                const Client = require('ssh2-sftp-client'),
-                    fs = require('fs-extra')
     
                 const config = {
                     host: host,
                     port: port,
                     username: username,
                     password: password
-                }
-                
-                let sftp = new Client
-                let data = fs.createReadStream(localPath)
+                },
+                data = fs.createReadStream(localPath)
     
                 sftp.connect(config)
                     .then(() => {
@@ -136,6 +136,7 @@ module.exports = {
                     })
     
             } catch (ex){
+                sftp.end()
                 reject(ex)
             }
         })
