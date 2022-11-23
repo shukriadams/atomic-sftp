@@ -63,8 +63,6 @@ async function sleep(ms){
     
     // line with 'Modify: 2022-11-22 11:09:47.087220971 +0100' for modify time
 
-    const regex = /Modify: (.*)/gm
-
     // create remote directories, sftp doesn't support automatic dir create on upload, and
     // we want to avoid round tripping to the server per file, so we locally collate all unique
     // dirs and create them first
@@ -94,6 +92,7 @@ async function sleep(ms){
                 password,
             })
             workerCount ++
+            console.log(`Ensuring dirs ${uniqueDirs.length} left :: ${uniqueDir} `)
 
             worker.on('message', (result) => {
                 workerCount --
@@ -105,9 +104,13 @@ async function sleep(ms){
         await sleep(10)
     }
 
-    console.log('done creating dirs')
+    // wait for threads
+    while(workerCount)await sleep(10)
+
+    console.log('done creating dirs, processing files')
 
     workerCount = 0
+    
     while (sourceFiles.length){
         if (workerCount < maxWorkers){
 
@@ -124,6 +127,7 @@ async function sleep(ms){
                 target
             })
             workerCount ++
+            console.log(`Processing files ${sourceFiles.length} left :: ${file} `)
 
             worker.on('message', (result) => {
                 workerCount --
@@ -134,6 +138,10 @@ async function sleep(ms){
         
         await sleep(10)
     }
+
+    // wait for threads
+    while(workerCount)await sleep(10)
+
     
     console.log('done!')
 })()

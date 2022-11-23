@@ -3,6 +3,7 @@ const { parentPort } = require('worker_threads'),
     path = require('path'),
     ssh = require('./ssh'),
     regex = /Modify: (.*)/gm,
+    { v4: uuidv4 } = require('uuid'),
     fs = require('fs-extra')
 
 parentPort.once('message', async (args) => {
@@ -44,7 +45,6 @@ parentPort.once('message', async (args) => {
             // look for 'cannot stat' for file not found
             if (ex.includes('cannot stat')){
                 pushFile = true
-                console.log('file doesnt exist remote')
             }
             else
                 throw ex
@@ -70,7 +70,7 @@ parentPort.once('message', async (args) => {
     
         }
 
-        let tempRemotePath = path.join(path.dirname(remotePath), `~${path.basename(remotePath)}`)
+        let tempRemotePath = path.join(path.dirname(remotePath), `~${path.basename(remotePath)}_${uuidv4()}`)
 
         try {
             await sftp.putFile(host, user, password, localPath, tempRemotePath, port)

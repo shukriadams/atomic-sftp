@@ -15,6 +15,7 @@
         "minimist": "1.2.7",
         "simple-ssh": "1.0.0",
         "ssh2-sftp-client": "8.1.0",
+        "uuid": "9.0.0",
         "timebelt": "https://github.com/shukriadams/timebelt.git#0.1.15",
         "winston-wrapper": "https://github.com/shukriadams/winston-wrapper.git#0.1.0",
         "madscience-fsUtils": "https://github.com/shukriadams/node-fsUtils.git#0.0.12",

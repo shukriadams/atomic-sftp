@@ -35,7 +35,6 @@ module.exports = {
 
     async deleteFile(host, username, password, path, port=22){
         const Client = require('ssh2-sftp-client'),
-            fs = require('fs-extra'),
             sftp = new Client
 
         return new Promise((resolve, reject)=>{
