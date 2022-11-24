@@ -1,17 +1,10 @@
-async function sleep(ms){
-    return new Promise((resolve, reject)=>{
-        setTimeout(() => {
-            resolve()
-        }, ms)
-    })
-}
-
 (async ()=>{
     const minimist = require('minimist'),
         process = require('process'),
         fsUtils = require('madscience-fsUtils'),
         path = require('path'),
         fs = require('fs-extra'),
+        timebelt = require('timebelt'),
         Worker = require('worker_threads').Worker,
         argv = minimist(process.argv.slice(2)),
         source = argv.source || argv.s,
@@ -101,11 +94,11 @@ async function sleep(ms){
             })
         } 
     
-        await sleep(10)
+        await timebelt.pause(10)
     }
 
     // wait for threads
-    while(workerCount)await sleep(10)
+    while(workerCount)await timebelt.pause(10)
 
     console.log('done creating dirs, processing files')
 
@@ -136,11 +129,11 @@ async function sleep(ms){
             })
         } 
         
-        await sleep(10)
+        await timebelt.pause(10)
     }
 
     // wait for threads
-    while(workerCount)await sleep(10)
+    while(workerCount)await timebelt.pause(10)
 
     
     console.log('done!')
