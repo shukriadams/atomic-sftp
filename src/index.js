@@ -15,6 +15,13 @@
         maxWorkers = argv.workers || argv.w || 10,
         password = argv.password || argv.p
 
+        
+    if (argv.version || argv.v){
+        const package = await fs.readJson(path.join( __dirname, '/package.json'))
+        console.log(`atomic-sftp, version ${package.version}`)
+        process.exit(0)
+    }
+
     if (!source){
         console.log(`ERROR :  Source not set, use --source or -s`)
         return process.exit(1)

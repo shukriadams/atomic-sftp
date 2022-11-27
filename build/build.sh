@@ -22,7 +22,10 @@ if [ "$target" = "" ]; then
 fi
 
 # force get tags, these don't always seem to be pulled by jenkins, use -f to force clobber local tags if out of sync
-git fetch --all --tags -f
+if [ ! $target = "dev" ]; then
+    git fetch --all --tags -f
+fi
+
 
 # get tag on this revision
 tag=$(git describe --abbrev=0 --tags)
@@ -45,6 +48,15 @@ if [ "$target" = "linux64" ]; then
     rm -rf $filename
     $(npm bin)/pkg ./../src/. --targets node12-linux-x64 --output $filename
 
+    # run app and ensure exit code was 0
+    (${filename} --version )
+elif [ "$target" = "dev" ]; then
+
+    # this mode is for dev, and on vagrant only
+    filename=./linux64/sftp_linux64
+    name="sftp_linux64"
+    pkg ./../src/. --targets node12-linux-x64 --output $filename
+    
     # run app and ensure exit code was 0
     (${filename} --version )
 elif [ "$target" = "win64" ]; then
