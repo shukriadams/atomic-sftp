@@ -3,3 +3,6 @@ src/node_modules
 src/package-lock.json
 vagrant/hyperv/.vagrant
 build/linux64/sftp_linux64
+build/node_modules
+build/package-lock.json
+build/win64/atomic-sftp.exe

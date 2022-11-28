@@ -1,6 +1,7 @@
 module.exports = {
     async mkdir(host, username, password, path, port=22){
         const Client = require('ssh2-sftp-client'),
+            fsUtils = require('madscience-fsUtils'),
             sftp = new Client
 
         return new Promise((resolve, reject)=>{
@@ -15,7 +16,7 @@ module.exports = {
     
                 sftp.connect(config)
                     .then(() => {
-                        return sftp.mkdir(path, true)
+                        return sftp.mkdir(fsUtils.toUnixPath(path), true)
                     })
                     .then(() => {
                         sftp.end()
@@ -35,6 +36,7 @@ module.exports = {
 
     async deleteFile(host, username, password, path, port=22){
         const Client = require('ssh2-sftp-client'),
+            fsUtils = require('madscience-fsUtils'),
             sftp = new Client
 
         return new Promise((resolve, reject)=>{
@@ -49,7 +51,7 @@ module.exports = {
     
                 sftp.connect(config)
                     .then(() => {
-                        return sftp.delete(path)
+                        return sftp.delete(fsUtils.toUnixPath(path))
                     })
                     .then(() => {
                         sftp.end()
@@ -72,6 +74,7 @@ module.exports = {
 
     async moveFile(host, username, password, tempPath, remotePath, port=22){
         const Client = require('ssh2-sftp-client'),
+            fsUtils = require('madscience-fsUtils'),
             sftp = new Client
 
 
@@ -87,7 +90,7 @@ module.exports = {
     
                 sftp.connect(config)
                     .then(() => {
-                        return sftp.rename(tempPath, remotePath)
+                        return sftp.rename(fsUtils.toUnixPath(tempPath), fsUtils.toUnixPath(remotePath))
                     })
                     .then(() => {
                         sftp.end()
@@ -107,6 +110,7 @@ module.exports = {
 
     async putFile(host, username, password, localPath, remotePath, port=22){
         const Client = require('ssh2-sftp-client'),
+            fsUtils = require('madscience-fsUtils'),
             fs = require('fs-extra'),
             sftp = new Client
 
@@ -114,16 +118,16 @@ module.exports = {
             try{
     
                 const config = {
-                    host: host,
-                    port: port,
-                    username: username,
-                    password: password
-                },
-                data = fs.createReadStream(localPath)
-    
+                        host: host,
+                        port: port,
+                        username: username,
+                        password: password
+                    },
+                    data = fs.createReadStream(localPath)
+        
                 sftp.connect(config)
                     .then(() => {
-                        return sftp.put(data, remotePath)
+                        return sftp.put(data, fsUtils.toUnixPath(remotePath))
                     })
                     .then(() => {
                         sftp.end()
